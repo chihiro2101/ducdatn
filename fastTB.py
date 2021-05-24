@@ -670,7 +670,7 @@ def main():
     MUTATE_RATE = 0.4
     kind_of_mutation = 0 #0: random, #1: advanced
     kind_of_crossover = 1 #0: uniform, #1: 1cutpoint, #2:2cutpoints
-    index_of_set_paras = 0
+    index_of_set_paras = 1
 
     directory = 'duc2001/duc2001_documents'
     save_path=['hyp1', 'hyp2', 'hyp3', 'hyp4', 'hyp5']
