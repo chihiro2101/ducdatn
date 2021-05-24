@@ -108,7 +108,6 @@ class METRIC(object):
 
     def fitness(self):
         if self.order_params == 0:
-            # parameters set 0
             rel = 0.25
             le = 0.25
             pos = 0.15
@@ -117,12 +116,22 @@ class METRIC(object):
             fit = pos*self.position() + rel*self.relationT() + le*self.leng() + noun*self.scale_noun() + cov*self.Cov()
 
         elif self.order_params == 1:
-            # parameters set 1
             rel = 0.25
             le = 0.3
             pos = 0.15
             noun = 0.3
             fit = pos*self.position() + rel*self.relationT() + le*self.leng() + noun*self.scale_noun()
+
+        elif self.order_params == 2:
+            fit = 10*self.relationT()
+        elif self.order_params == 3:
+            fit = 10*self.leng()
+        elif self.order_params == 4:
+            fit = 10*self.position()
+        elif self.order_params == 5:
+            fit = 10*self.scale_noun()
+        elif self.order_params == 6:
+            fit = 10*self.Cov()
         
         # My
         # rel = 0.25

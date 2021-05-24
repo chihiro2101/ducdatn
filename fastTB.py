@@ -24,7 +24,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 class Summerizer(object):
-    def __init__(self, title, sentences, raw_sentences, population_size, max_generation, crossover_rate, mutation_rate, num_picked_sents, simWithTitle, simWithDoc, sim2sents, number_of_nouns, order_params):
+    def __init__(self, title, sentences, raw_sentences, population_size, max_generation, crossover_rate, mutation_rate, num_picked_sents, simWithTitle, simWithDoc, sim2sents, number_of_nouns, order_params, kind_of_crossover, kind_of_mutation):
         self.title = title
         self.raw_sentences = raw_sentences
         self.sentences = sentences
@@ -39,6 +39,8 @@ class Summerizer(object):
         self.sim2sents = sim2sents
         self.number_of_nouns = number_of_nouns
         self.order_params = order_params
+        self.kind_of_crossover = kind_of_crossover
+        self.kind_of_mutation = kind_of_mutation
 
 
     def generate_population(self, amount):
@@ -104,7 +106,7 @@ class Summerizer(object):
             return None
         fittest_individual = max(fitness_value)
         medium_individual = sta.median(fitness_value)
-        selective_pressure = fittest_individual - medium_individual
+        selective_pressure = fittest_individual/medium_individual
         j_value = 1
         a_value = np.random.rand()   
         for agent in population:
@@ -128,6 +130,28 @@ class Summerizer(object):
                     sum_sent_in_summary -=1    
         return agent
 
+
+    def uniform_crossover(self, A, B):
+        P = np.random.rand(self.num_objects)
+        for i in range(len(P)):
+            if P[i] < 0.5:
+                temp = A[i]
+                A[i] = B[i]
+                B[i] = temp
+        return A, B
+
+    def single_point_crossover(self, A, B):
+        x =  1 + random.randint(0, self.num_objects - 2)
+        A_new = np.append(A[:x], B[x:])
+        B_new = np.append(B[:x], A[x:])
+        return A_new, B_new
+
+    def multi_point_crossover(self, A, B):
+        X = 2
+        for i in range(X):
+            A, B = self.single_point_crossover(A,B)
+        return A, B
+
     def crossover(self, individual_1, individual_2, max_sent):
 
         # check tỷ lệ crossover
@@ -136,7 +160,6 @@ class Summerizer(object):
 
         individual_2 = random.choice(individual_2[:-1])
 
-
         if len(individual_2) == 0:
             fitness1 = compute_fitness(self.title, self.sentences, individual_1[0], self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
             child1 = (individual_1[0], individual_2, fitness1)
@@ -144,50 +167,103 @@ class Summerizer(object):
             child2 = (individual_1[1], individual_2, fitness2)
             return child1, child2
 
+        if self.kind_of_crossover == 0:
+            #child 1:
+            parent1 = individual_1[0].copy()
+            parent2 = individual_2.copy()
+            agent_1a, agent_1b = self.uniform_crossover(parent1, parent2)
+            agent_1a = self.reduce_no_memes(agent_1a, max_sent)
+            agent_1b = self.reduce_no_memes(agent_1b, max_sent)
+            fitness_1a = compute_fitness(self.title, self.sentences, agent_1a, self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
+            fitness_1b = compute_fitness(self.title, self.sentences, agent_1b, self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
+            if fitness_1a > fitness_1b:
+                child_1 = (agent_1a, agent_1b, fitness_1a)
+            else:
+                child_1 = (agent_1a, agent_1b, fitness_1b)
+
+            #child 2:
+            parent1 = individual_1[1].copy()
+            parent2 = individual_2.copy()
+            agent_2a, agent_2b = self.uniform_crossover(parent1, parent2)
+            agent_2a = self.reduce_no_memes(agent_2a, max_sent)
+            agent_2b = self.reduce_no_memes(agent_2b, max_sent)
+            fitness_2a = compute_fitness(self.title, self.sentences, agent_2a, self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
+            fitness_2b = compute_fitness(self.title, self.sentences, agent_2b, self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
+            if fitness_2a > fitness_2b:
+                child_2 = (agent_2a, agent_2b, fitness_2a)
+            else:
+                child_2 = (agent_2a, agent_2b, fitness_2b)
 
 
-        individual_1 = random.choice(individual_1[:-1])
-        
-        #tìm điểm chéo 1
-        crossover_point = 1 + random.randint(0, self.num_objects - 2)
-        agent_1a = individual_1[:crossover_point] + individual_2[crossover_point:]
-        agent_1a = self.reduce_no_memes(agent_1a, max_sent)
-        fitness_1a = compute_fitness(self.title, self.sentences, agent_1a, self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
-        
-        agent_1b = individual_2[:crossover_point] + individual_1[crossover_point:]
-        agent_1b = self.reduce_no_memes(agent_1b, max_sent)
-        fitness_1b = compute_fitness(self.title, self.sentences, agent_1b, self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
-        
-        if fitness_1a > fitness_1b:
-            child_1 = (agent_1a, agent_1b, fitness_1a)
+        elif self.kind_of_crossover ==1:
+            individual_1 = random.choice(individual_1[:-1])
+            #tìm điểm chéo 1
+            crossover_point = 1 + random.randint(0, self.num_objects - 2)
+            agent_1a = individual_1[:crossover_point] + individual_2[crossover_point:]
+            agent_1a = self.reduce_no_memes(agent_1a, max_sent)
+            fitness_1a = compute_fitness(self.title, self.sentences, agent_1a, self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
+            
+            agent_1b = individual_2[:crossover_point] + individual_1[crossover_point:]
+            agent_1b = self.reduce_no_memes(agent_1b, max_sent)
+            fitness_1b = compute_fitness(self.title, self.sentences, agent_1b, self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
+            
+            if fitness_1a > fitness_1b:
+                child_1 = (agent_1a, agent_1b, fitness_1a)
+            else:
+                child_1 = (agent_1a, agent_1b, fitness_1b)
+
+            #tìm điểm chéo 2
+            crossover_point_2 = 1 + random.randint(0, self.num_objects - 2)
+            
+            agent_2a = individual_1[:crossover_point_2] + individual_2[crossover_point_2:]
+            agent_2a = self.reduce_no_memes(agent_2a, max_sent)
+            fitness_2a = compute_fitness(self.title, self.sentences, agent_2a, self.simWithTitle, self.simWithDoc,self.sim2sents, self.number_of_nouns, self.order_params)
+            
+            agent_2b = individual_2[:crossover_point_2] + individual_1[crossover_point_2:]
+            agent_2b = self.reduce_no_memes(agent_2b, max_sent)
+            fitness_2b = compute_fitness(self.title, self.sentences, agent_2b, self.simWithTitle, self.simWithDoc,self.sim2sents, self.number_of_nouns, self.order_params)
+            
+            if fitness_2a > fitness_2b:
+                child_2 = (agent_2a, agent_2b, fitness_2a)
+            else:
+                child_2 = (agent_2a, agent_2b, fitness_2b)        
+
         else:
-            child_1 = (agent_1a, agent_1b, fitness_1b)
+            #child 1:
+            parent1 = individual_1[0].copy()
+            parent2 = individual_2.copy()
+            agent_1a, agent_1b = self.multi_point_crossover(parent1, parent2)
+            agent_1a = self.reduce_no_memes(agent_1a, max_sent)
+            agent_1b = self.reduce_no_memes(agent_1b, max_sent)
+            fitness_1a = compute_fitness(self.title, self.sentences, agent_1a, self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
+            fitness_1b = compute_fitness(self.title, self.sentences, agent_1b, self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
+            if fitness_1a > fitness_1b:
+                child_1 = (agent_1a, agent_1b, fitness_1a)
+            else:
+                child_1 = (agent_1a, agent_1b, fitness_1b)
 
-        #tìm điểm chéo 2
-        crossover_point_2 = 1 + random.randint(0, self.num_objects - 2)
-        
-        agent_2a = individual_1[:crossover_point_2] + individual_2[crossover_point_2:]
-        agent_2a = self.reduce_no_memes(agent_2a, max_sent)
-        fitness_2a = compute_fitness(self.title, self.sentences, agent_2a, self.simWithTitle, self.simWithDoc,self.sim2sents, self.number_of_nouns, self.order_params)
-        
-        agent_2b = individual_2[:crossover_point_2] + individual_1[crossover_point_2:]
-        agent_2b = self.reduce_no_memes(agent_2b, max_sent)
-        fitness_2b = compute_fitness(self.title, self.sentences, agent_2b, self.simWithTitle, self.simWithDoc,self.sim2sents, self.number_of_nouns, self.order_params)
-        
-        if fitness_2a > fitness_2b:
-            child_2 = (agent_2a, agent_2b, fitness_2a)
-        else:
-            child_2 = (agent_2a, agent_2b, fitness_2b)        
-        
+            #child 2:
+            parent1 = individual_1[1].copy()
+            parent2 = individual_2.copy()
+            agent_2a, agent_2b = self.multi_point_crossover(parent1, parent2)
+            agent_2a = self.reduce_no_memes(agent_2a, max_sent)
+            agent_2b = self.reduce_no_memes(agent_2b, max_sent)
+            fitness_2a = compute_fitness(self.title, self.sentences, agent_2a, self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
+            fitness_2b = compute_fitness(self.title, self.sentences, agent_2b, self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
+            if fitness_2a > fitness_2b:
+                child_2 = (agent_2a, agent_2b, fitness_2a)
+            else:
+                child_2 = (agent_2a, agent_2b, fitness_2b)
+            
         return child_1, child_2
-    
+
 
     def mutate(self, individual, max_sent):
         sum_sent_in_summary = sum(individual[0])
         sum_sent_in_summary2 =sum(individual[1])
         if len(individual[1]) == 0:
             self.mutation_rate = 2/self.num_objects
-            chromosome = individual[0][:]
+            chromosome = individual[0][:].copy()
             for i in range(len(chromosome)):
                 if random.random() < self.mutation_rate and sum_sent_in_summary < max_sent :
                     if chromosome[i] == 0 :
@@ -197,6 +273,8 @@ class Summerizer(object):
                         chromosome[i] = 0
                         sum_sent_in_summary -=1     
             fitness = compute_fitness(self.title, self.sentences, chromosome , self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
+            if self.kind_of_mutation == 1 and individual[2] > fitness:
+                return individual
             return (chromosome, individual[1], fitness)
 
         if random.random() < 0.05 :
@@ -206,8 +284,8 @@ class Summerizer(object):
             return(chromosome, null_chromosome, fitness) 
 
 
-        chromosome1 = individual[0][:]
-        chromosome2 = individual[1][:]
+        chromosome1 = individual[0][:].copy()
+        chromosome2 = individual[1][:].copy()
         self.mutation_rate = 1/self.num_objects
         for i in range(len(chromosome1)):
             if random.random() < self.mutation_rate and sum_sent_in_summary < max_sent :
@@ -232,6 +310,8 @@ class Summerizer(object):
         fitness1 = compute_fitness(self.title, self.sentences, chromosome1, self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
         fitness2 = compute_fitness(self.title, self.sentences, chromosome2, self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
         fitness = max(fitness1, fitness2)
+        if self.kind_of_mutation == 1 and individual[2] > fitness:
+            return individual
         return (chromosome1, chromosome2, fitness)
 
     def compare(self, lst1, lst2):
@@ -254,16 +334,15 @@ class Summerizer(object):
 
 
     def selection(self, population):
-        max_sent = 4
-        condition_for_survivor = 0 # khoong co survivor
+        max_sent = int(0.2*self.num_objects)
+        if max_sent < 4:
+            max_sent = 4
+        condition_for_survivor = 0 # khong co survivor
         tmp_popu = population.copy()
         new_population = []
         new_typeA = []
         new_typeB = []
     
-        
-
-
         if condition_for_survivor == 1:
             population[0] = sorted(population[0], key=lambda x: x[2], reverse=True)
             population[1] = sorted(population[1], key=lambda x: x[2], reverse=True)
@@ -511,11 +590,11 @@ def solution_for_exception(raw_sentences, file_name):
         f.write(sent + '\n')
     f.close()
 
-def start_run(processID, POPU_SIZE, MAX_GEN, CROSS_RATE, MUTATE_RATE, sub_stories, save_path, order_params):
+def start_run(processID, POPU_SIZE, MAX_GEN, CROSS_RATE, MUTATE_RATE, sub_stories, save_path, order_params, kind_of_crossover, kind_of_mutation):
     for example in sub_stories:
         file_name = os.path.join(save_path, example[1])
         start_time = time.time()
-        raw_sents = re.split(" . ", example[0])
+        raw_sents = re.split("\n", example[0])
         #remove too short sentences
         df = pd.DataFrame(raw_sents, columns =['raw'])
         df['preprocess_raw'] = df['raw'].apply(lambda x: clean_text(x))
@@ -530,7 +609,7 @@ def start_run(processID, POPU_SIZE, MAX_GEN, CROSS_RATE, MUTATE_RATE, sub_storie
             preprocessed_sentences.append(preprocessed_sent)
 
 
-        if len(preprocessed_sentences) < 10:
+        if len(preprocessed_sentences) < 5:
             solution_for_exception(raw_sentences, file_name)
         title = preprocessed_sentences[0]
 
@@ -558,7 +637,7 @@ def start_run(processID, POPU_SIZE, MAX_GEN, CROSS_RATE, MUTATE_RATE, sub_storie
         print('time for processing', time.time() - start_time)
 
             
-        Solver = Summerizer(title, preprocessed_sentences, raw_sentences, POPU_SIZE, MAX_GEN, CROSS_RATE, MUTATE_RATE, NUM_PICKED_SENTS, simWithTitle, simWithDoc, sim2sents, number_of_nouns, order_params)
+        Solver = Summerizer(title, preprocessed_sentences, raw_sentences, POPU_SIZE, MAX_GEN, CROSS_RATE, MUTATE_RATE, NUM_PICKED_SENTS, simWithTitle, simWithDoc, sim2sents, number_of_nouns, order_params, kind_of_crossover, kind_of_mutation)
         best_individual = Solver.solve()
                  
 
@@ -570,18 +649,18 @@ def start_run(processID, POPU_SIZE, MAX_GEN, CROSS_RATE, MUTATE_RATE, sub_storie
             Solver.show(best_individual, file_name)
        
 
-def multiprocess(num_process, POPU_SIZE, MAX_GEN, CROSS_RATE, MUTATE_RATE, stories, save_path):
+def multiprocess(num_process, POPU_SIZE, MAX_GEN, CROSS_RATE, MUTATE_RATE, stories, save_path, index_of_set_paras,kind_of_crossover, kind_of_mutation):
+    print("The number of processes: %d" %(num_process))
     processes = []
     n = math.floor(len(stories)/5)
     set_of_docs = [stories[i:i + n] for i in range(0, len(stories), n)] 
     for index, sub_stories in enumerate(set_of_docs):
         p = multiprocessing.Process(target=start_run, args=(
-            index, POPU_SIZE, MAX_GEN, CROSS_RATE, MUTATE_RATE,sub_stories, save_path[index], 0))
+            index, POPU_SIZE, MAX_GEN, CROSS_RATE, MUTATE_RATE,sub_stories, save_path[index], index_of_set_paras,kind_of_crossover, kind_of_mutation))
         processes.append(p)
         p.start()      
     for p in processes:
         p.join()
-
 
 def main():
     # Setting Variables
@@ -589,8 +668,11 @@ def main():
     MAX_GEN = 200
     CROSS_RATE = 0.8
     MUTATE_RATE = 0.4
+    kind_of_mutation = 0 #0: random, #1: advanced
+    kind_of_crossover = 1 #0: uniform, #1: 1cutpoint, #2:2cutpoints
+    index_of_set_paras = 0
 
-    directory = 'stories'
+    directory = 'duc2001\duc2001_documents'
     save_path=['hyp1', 'hyp2', 'hyp3', 'hyp4', 'hyp5']
 
     if not os.path.exists('hyp1'):
@@ -615,9 +697,9 @@ def main():
     stories = load_docs(directory)
     start_time = time.time()
 
-    # start_run(1, POPU_SIZE, MAX_GEN, CROSS_RATE, MUTATE_RATE, stories, save_path[0], 1)
+    # start_run(1, POPU_SIZE, MAX_GEN, CROSS_RATE, MUTATE_RATE, stories, save_path[0], index_of_set_paras, kind_of_crossover, kind_of_mutation)
     multiprocess(5, POPU_SIZE, MAX_GEN, CROSS_RATE,
-                 MUTATE_RATE, stories, save_path)
+                 MUTATE_RATE, stories, save_path, index_of_set_paras,kind_of_crossover, kind_of_mutation)
 
     print("--- %s mins ---" % ((time.time() - start_time)/(60.0*len(stories))))
 
