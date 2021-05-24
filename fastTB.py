@@ -494,8 +494,8 @@ class Summerizer(object):
             best_type_A = population[0][0]
             best_type_B = population[1][0]
             if best_type_A[2] > best_type_B[2]:
-                fitness1 = compute_fitness(self.title, self.sentences, best_type_A[0], self.rougeforsentences, self.abstract, self.order_params)
-                fitness2 = compute_fitness(self.title, self.sentences, best_type_A[1], self.rougeforsentences, self.abstract, self.order_params)
+                fitness1 = compute_fitness(self.title, self.sentences, best_type_A[0], self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
+                fitness2 = compute_fitness(self.title, self.sentences, best_type_A[1], self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
                 if fitness1 >= fitness2:
                     best = (best_type_A[0], fitness1)
                 else:
@@ -506,8 +506,8 @@ class Summerizer(object):
             if best[1] >= final_res[2]:
                 return best
             else:
-                fitness1 = compute_fitness(self.title, self.sentences, final_res[0], self.rougeforsentences, self.abstract, self.order_params)
-                fitness2 = compute_fitness(self.title, self.sentences, final_res[1], self.rougeforsentences, self.abstract, self.order_params)
+                fitness1 = compute_fitness(self.title, self.sentences, final_res[0], self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
+                fitness2 = compute_fitness(self.title, self.sentences, final_res[1], self.simWithTitle, self.simWithDoc, self.sim2sents, self.number_of_nouns, self.order_params)
                 if fitness1 >= fitness2:
                     best = (final_res[0], fitness1)
                 else:
