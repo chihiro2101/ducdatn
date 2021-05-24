@@ -672,7 +672,7 @@ def main():
     kind_of_crossover = 1 #0: uniform, #1: 1cutpoint, #2:2cutpoints
     index_of_set_paras = 0
 
-    directory = 'duc2001\duc2001_documents'
+    directory = 'duc2001/duc2001_documents'
     save_path=['hyp1', 'hyp2', 'hyp3', 'hyp4', 'hyp5']
 
     if not os.path.exists('hyp1'):
