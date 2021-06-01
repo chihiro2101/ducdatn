@@ -45,7 +45,7 @@ class METRIC(object):
                 rt += self.simWithTitle[i]
                 tmp_arr.append(self.simWithTitle[i])
         try:
-            res = (rt/(self.O()))/np.max(tmp_arr)
+            res = rt/(self.O())
         except Exception:
             res = 0
         if np.isnan(float(res)) == True:
