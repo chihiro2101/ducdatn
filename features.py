@@ -39,11 +39,11 @@ class METRIC(object):
 
     def relationT(self):
         rt = 0
-        tmp_arr = []
+        # tmp_arr = []
         for i in range(self.n):
             if self.values[i] == 1:
                 rt += self.simWithTitle[i]
-                tmp_arr.append(self.simWithTitle[i])
+                # tmp_arr.append(self.simWithTitle[i])
         try:
             res = rt/(self.O())
         except Exception:
